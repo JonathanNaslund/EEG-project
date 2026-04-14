@@ -1,0 +1,24 @@
+# Data och tunga filer (Dessa ska INTE laddas upp)
+data/
+EEG-proc/
+*.bdf
+*.fif
+*.nii
+*.gz
+
+# Metadata från datasetet
+dataset_description.json
+participants.json
+participants.tsv
+CHANGES
+
+# Python-miljö och cache
+__pycache__/
+*.pyc
+.venv/
+.env
+.ipynb_checkpoints/
+
+# Systemfiler
+.DS_Store
+Thumbs.db
