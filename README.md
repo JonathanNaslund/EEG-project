@@ -1,19 +1,59 @@
-Bimodal dataset on Inner Speech
+Here is the final, formatted content for your README.md. You can copy this block directly into the file in VS Code.
 
-Code available: https://github.com/LTU-Machine-Learning/Inner_Speech_EEG_FMRI 
+Markdown
+# 🧠 EEG Inner Speech Recognition
 
-Publication available: https://www.nature.com/articles/s41597-023-02286-w
+This project provides a complete pipeline to preprocess raw EEG data and decode "Inner Speech" (words thought but not spoken) using Machine Learning. It is based on the **ds004197** dataset.
 
-Abstract:
-The recognition of inner speech, which could give a `voice' to patients that have no ability to speak or move, is a challenge for brain-computer interfaces (BCIs). A shortcoming of the available datasets is that they do not combine modalities to increase the performance of inner speech recognition. Multimodal datasets of brain data enable the fusion of neuroimaging modalities with complimentary properties, such as the high spatial resolution of functional magnetic resonance imaging (fMRI) and the temporal resolution of electroencephalography (EEG), and therefore are promising for decoding inner speech. This paper presents the first publicly available bimodal dataset containing EEG and fMRI data acquired nonsimultaneously during inner-speech production.  Data were obtained from four healthy, right-handed participants during an inner-speech task with words in either a social or numerical category. Each of the 8-word stimuli were assessed with 40 trials, resulting in 320 trials in each modality for each participant.   
-The aim of this work is to provide a publicly available bimodal dataset on inner speech, contributing towards speech prostheses.
+---
 
-Short Dataset description:
-The dataset consists of 1280 trials in each modality (EEG, FMRI). 
-The stimuli contain 8 words,  selected from 2 different categories (social, numeric):
-Social: child, daughter, father, wife
-Numeric: four, three, ten, six
+## 🚀 Quick Start Guide for Group Members
 
-There are 4 subjects in total: sub-01, sub-02, sub-03, sub-05. Initially, there were 5 participants, however, sub-04 data was rejected due to high fluctuations. Details of valid data are available in the file participants.tsv. 
+### 1. Initial Local Setup
+Since raw data and processed files are ignored by Git to keep the repository lightweight, you must set up your local folders manually:
 
-For questions please contact: foteini.liwicki@ltu.se 
+1.  **Create Folders:** Create a folder named `data/` and a folder named `EEG-proc/` in the project root.
+2.  **Download Data:** Download the dataset **ds004197** from [OpenNeuro](https://openneuro.org/datasets/ds004197) and place it inside the `data/` folder.
+3.  **Install Requirements:**
+    ```bash
+    pip install mne numpy pandas scikit-learn matplotlib
+    ```
+
+---
+
+## 🛠 Running the Pipeline
+
+You must run the scripts in the following order:
+
+### Step 1: Preprocessing
+Clean the raw noise and remove artifacts (like eye blinks) for a specific subject:
+```bash
+python Inner_Speech_EEG_fMRI/EEG_preprocessing/preprocess.py --id 1 # change ID (2,3,5) for different subs
+This generates a .fif file in the EEG-proc/ folder. You must do this before moving to the next steps.
+
+Step 2: Visualizing Brain Activity (ERP)
+To see the average brain response and check for language-related activity in the left hemisphere:
+
+Bash
+python visualize_eeg.py
+Look for: Differences in the wave-forms between "Social" and "Numeric" categories.
+
+Check: That the 50Hz power line noise has been successfully filtered.
+
+Step 3: AI Decoding (Classification)
+To test if the Machine Learning model can guess which word the subject was thinking:
+
+Bash
+python classify_eeg.py
+The Goal: An accuracy score significantly above 50% (for binary choices) or 12.5% (for all 8 words) indicates successful decoding.
+
+📂 Project Structure
+Inner_Speech_EEG_fMRI/: Original research scripts, fMRI tools, and E-Prime protocols.
+
+preprocess.py: Main cleaning script (Filters + ICA + Epoching).
+
+visualize_eeg.py: Generates ERP plots and Topomaps.
+
+classify_eeg.py: Baseline decoder using CSP (Common Spatial Patterns) and LDA.
+
+.gitignore: Prevents heavy EEG data files from being uploaded to GitHub.
