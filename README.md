@@ -1,59 +1,121 @@
-Here is the final, formatted content for your README.md. You can copy this block directly into the file in VS Code.
+# EEG Inner Speech Recognition
 
-Markdown
-# 🧠 EEG Inner Speech Recognition
+This project provides a pipeline to preprocess raw EEG data, visualize evoked responses, and run a baseline inner-speech classifier using the OpenNeuro dataset `ds004197`.
 
-This project provides a complete pipeline to preprocess raw EEG data and decode "Inner Speech" (words thought but not spoken) using Machine Learning. It is based on the **ds004197** dataset.
+The folder `Inner_Speech_EEG_fMRI/` contains the original reference material from the LTU repository. Our main workflow uses:
 
----
+- `Inner_Speech_EEG_fMRI/EEG_preprocessing/preprocess.py`
+- `visualize_eeg.py`
+- `classify_eeg.py`
 
-## 🚀 Quick Start Guide for Group Members
+## Quick Start Guide
 
-### 1. Initial Local Setup
-Since raw data and processed files are ignored by Git to keep the repository lightweight, you must set up your local folders manually:
+### 1. Local Setup
 
-1.  **Create Folders:** Create a folder named `data/` and a folder named `EEG-proc/` in the project root.
-2.  **Download Data:** Download the dataset **ds004197** from [OpenNeuro](https://openneuro.org/datasets/ds004197) and place it inside the `data/` folder.
-3.  **Install Requirements:**
-    ```bash
-    pip install mne numpy pandas scikit-learn matplotlib
-    ```
+Raw data and processed files are not stored in Git, so each group member needs to create the local data folders manually.
 
----
+Expected structure:
 
-## 🛠 Running the Pipeline
+```text
+EEG-project/
+├── data/
+│   ├── sub-01/
+│   ├── sub-02/
+│   ├── sub-03/
+│   └── ...
+├── EEG-proc/
+├── classify_eeg.py
+├── visualize_eeg.py
+└── Inner_Speech_EEG_fMRI/
+```
 
-You must run the scripts in the following order:
+After downloading subject 1 EEG data, this file should exist:
+
+```text
+data/sub-01/ses-EEG/eeg/sub-01_ses-EEG_task-inner_eeg.bdf
+```
+
+The folder `EEG-proc/` is used for cleaned output files such as:
+
+```text
+EEG-proc/sub-01_cleaned-epo.fif
+```
+
+### 2. Download Data
+
+Download dataset `ds004197` from OpenNeuro:
+
+https://openneuro.org/datasets/ds004197
+
+Place the downloaded subject folders inside `data/`.
+
+### 3. Install Requirements
+
+```bash
+pip install mne numpy pandas scikit-learn matplotlib
+```
+
+## Running the Pipeline
+
+Run the scripts in the following order.
 
 ### Step 1: Preprocessing
-Clean the raw noise and remove artifacts (like eye blinks) for a specific subject:
+
+Preprocess one subject and create cleaned EEG epochs:
+
 ```bash
-python Inner_Speech_EEG_fMRI/EEG_preprocessing/preprocess.py --id 1 # change ID (2,3,5) for different subs
-This generates a .fif file in the EEG-proc/ folder. You must do this before moving to the next steps.
+python Inner_Speech_EEG_fMRI/EEG_preprocessing/preprocess.py --id 1
+```
 
-Step 2: Visualizing Brain Activity (ERP)
-To see the average brain response and check for language-related activity in the left hemisphere:
+This reads:
 
-Bash
-python visualize_eeg.py
-Look for: Differences in the wave-forms between "Social" and "Numeric" categories.
+```text
+data/sub-01/ses-EEG/eeg/sub-01_ses-EEG_task-inner_eeg.bdf
+```
 
-Check: That the 50Hz power line noise has been successfully filtered.
+and writes:
 
-Step 3: AI Decoding (Classification)
-To test if the Machine Learning model can guess which word the subject was thinking:
+```text
+EEG-proc/sub-01_cleaned-epo.fif
+```
 
-Bash
-python classify_eeg.py
-The Goal: An accuracy score significantly above 50% (for binary choices) or 12.5% (for all 8 words) indicates successful decoding.
+Change `--id` to `2`, `3`, or `5` for the other subjects currently supported by the script.
 
-📂 Project Structure
-Inner_Speech_EEG_fMRI/: Original research scripts, fMRI tools, and E-Prime protocols.
+### Step 2: Visualizing Brain Activity
 
-preprocess.py: Main cleaning script (Filters + ICA + Epoching).
+Plot ERP and topographic maps for a cleaned subject:
 
-visualize_eeg.py: Generates ERP plots and Topomaps.
+```bash
+python visualize_eeg.py --id 1
+```
 
-classify_eeg.py: Baseline decoder using CSP (Common Spatial Patterns) and LDA.
+This script loads the cleaned `.fif` file from `EEG-proc/` and compares the `Social` and `Numeric` conditions.
 
-.gitignore: Prevents heavy EEG data files from being uploaded to GitHub.
+### Step 3: Baseline Classification
+
+Run the baseline CSP + LDA classifier:
+
+```bash
+python classify_eeg.py --id 1
+```
+
+This uses the cleaned epochs to test whether the model can separate social and numeric word conditions.
+
+## Project Files
+
+- `Inner_Speech_EEG_fMRI/EEG_preprocessing/preprocess.py`
+  Main preprocessing script: trigger extraction, filtering, ICA, and epoching.
+- `visualize_eeg.py`
+  ERP and topomap visualization for cleaned EEG epochs.
+- `classify_eeg.py`
+  Baseline decoding script using CSP and LDA.
+- `Inner_Speech_EEG_fMRI/EEG_preprocessing/processing_pipeline.m`
+  Original MATLAB/EEGLAB preprocessing reference from the dataset authors.
+- `Inner_Speech_EEG_fMRI/fMRI_preprocessing/`
+  Reference files for the original fMRI preprocessing workflow.
+
+## Notes
+
+- The main scripts use the repository root together with the `data/` and `EEG-proc/` folders.
+- The optional `--root` argument can be used if the project data is stored somewhere else.
+- The MATLAB and fMRI files are included as reference material and are not required for the Python EEG pipeline above.
