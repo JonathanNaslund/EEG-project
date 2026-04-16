@@ -1,13 +1,15 @@
 import mne
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 
-# 1. Ladda filen
-file_path = "C:/projects/brain_imaging/EEG-proc/sub-01_cleaned-epo.fif"
+# 1. Load the file
+root_folder = Path(__file__).resolve().parent.parent
+file_path = root_folder / "EEG-proc" / "sub-03_cleaned-epo.fif"
 epochs = mne.read_epochs(file_path, preload=True)
 
-# 2. Uppdatera event_id manuellt
-# Här mappar vi namnen till de exakta ID:n som din logg visade (111, 112... 128)
+# 2. Update event_id manually
+# Here we map the names to the exact IDs that your log showed (111, 112... 128)
 new_event_id = {
     'Social/Child': 111, 'Social/Daughter': 112, 
     'Social/Father': 113, 'Social/Wife': 114,
@@ -15,33 +17,34 @@ new_event_id = {
     'Numeric/Six': 127, 'Numeric/Four': 128
 }
 
-# Vi måste filtrera listan så vi bara lägger till de ID:n som faktiskt finns i filen
+# We need to filter the list so we only include IDs that actually exist in the file
 actual_events = np.unique(epochs.events[:, 2])
 filtered_event_id = {k: v for k, v in new_event_id.items() if v in actual_events}
 epochs.event_id = filtered_event_id
 
-print(f"Matchade kategorier: {epochs.event_id}")
+print(f"Matched categories: {epochs.event_id}")
 
-# 3. Kontrollera om vi har data för grupperna
+# 3. Check if we have data for the groups
 if 'Social' in epochs.event_id.keys() or any(k.startswith('Social/') for k in epochs.event_id):
-    print("Skapar ERP för Sociala ord...")
-    # Notera: "/" i namnet gör att vi kan skriva bara 'Social' för att få alla underkategorier
+    print("Creating ERP for social words...")
+    # Note: "/" in the name allows us to use just 'Social' to get all subcategories
     evoked_social = epochs['Social'].average()
     evoked_numeric = epochs['Numeric'].average()
 
-    # --- Visualisering 1: ERP Kurvor ---
-    # Jämför Sociala vs Numeriska på elektrod Cz (mitt på huvudet)
+    # --- Visualization 1: ERP curves ---
+    # Compare Social vs Numeric at electrode Cz (center of the head)
     mne.viz.plot_compare_evokeds(
         dict(Social=evoked_social, Numeric=evoked_numeric),
         picks='Cz',
-        title="Inre tal: Sociala vs Numeriska ord (Cz)"
+        title="Inner speech: Social vs Numeric words (Cz)"
     )
 
-    # --- Visualisering 2: Topomaps ---
-    # Se var i hjärnan det händer saker vid 300ms och 500ms
-    evoked_social.plot_topomap(times=[0.3, 0.5], title="Topografi: Sociala ord")
-    
+    # --- Visualization 2: Topomaps ---
+    # See where in the brain activity occurs at 300 ms and 500 ms
+    evoked_social_eeg = evoked_social.copy().pick_types(eeg=True, exclude=['EXG7', 'EXG8'])
+    fig = evoked_social_eeg.plot_topomap(times=[0.3, 0.5])
+    fig.suptitle("Topography: Social words")
     plt.show()
 else:
-    print("Kunde inte hitta några events som matchar 'Social'.")
-    print(f"ID:n som finns i filen: {actual_events}")
+    print("Could not find any events matching 'Social'.")
+    print(f"IDs present in the file: {actual_events}")
