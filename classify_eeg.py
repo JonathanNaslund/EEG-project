@@ -1,50 +1,61 @@
 import mne
 import numpy as np
+from pathlib import Path
+
 from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from mne.decoding import CSP
-from pathlib import Path
 
 
-# 1. Load data
-root_folder = Path(__file__).resolve().parent.parent
-file_path = root_folder / "EEG-proc" / "sub-03_cleaned-epo.fif"
+# 1. Load preprocessed word epochs
+file_path = Path.home() / "brain_project" / "data" / "pre" / "03" / \
+    "sub-03_ses-eeg_task-innerspeech_desc-words_epo.fif"
+
 epochs = mne.read_epochs(file_path, preload=True)
+epochs = epochs.crop(tmin=0.0, tmax=2.0)
 
-# 2. Prepare labels (y)
-# We map: Social words -> 0, Numeric words -> 1
-# We ignore fixation (1) and rest (2) for this analysis
-event_id_map = {
-    'Social/Child': 111, 'Social/Daughter': 112, 'Social/Father': 113, 'Social/Wife': 114,
-    'Numeric/Ten': 125, 'Numeric/Three': 126, 'Numeric/Six': 127, 'Numeric/Four': 128
-}
-epochs.event_id = event_id_map
+print(epochs)
+print("Event IDs:", epochs.event_id)
 
-# Select only the word epochs
-epochs_data = epochs['Social', 'Numeric']
-X = epochs_data.get_data(picks='eeg') # Format: [trials, channels, times]
-y = epochs_data.events[:, 2]
 
-# Convert IDs to 0 and 1 for easier analysis
-y = np.where(np.isin(y, [111, 112, 113, 114]), 0, 1)
+# 2. Keep EEG data only
+X = epochs.get_data(picks="eeg")   # shape: trials × channels × time
+y_raw = epochs.events[:, 2]
 
-print(f"Data ready for AI: {X.shape[0]} trials, {X.shape[1]} channels.")
 
-# 3. Build the ML pipeline
-# CSP extracts spatial patterns, LDA classifies them
-csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
-lda = LinearDiscriminantAnalysis()
+# 3. Convert labels to binary
+social_ids = [111, 112, 113, 114]
+numeric_ids = [125, 126, 127, 128]
 
-clf = Pipeline([('CSP', csp), ('LDA', lda)])
+keep = np.isin(y_raw, social_ids + numeric_ids)
 
-# 4. Evaluate with Cross-Validation (K-fold)
-# We split the data into 5 parts, train on 4 and test on 1, repeat 5 times.
+X = X[keep]
+y_raw = y_raw[keep]
+
+y = np.where(np.isin(y_raw, social_ids), 0, 1)
+
+print(f"Trials: {X.shape[0]}")
+print(f"Channels: {X.shape[1]}")
+print(f"Time points: {X.shape[2]}")
+print(f"Labels: Social={np.sum(y == 0)}, Numeric={np.sum(y == 1)}")
+
+
+# 4. CSP + LDA model
+clf = Pipeline([
+    ("CSP", CSP(n_components=4, reg=0.1, log=True, norm_trace=False)),
+    ("LDA", LinearDiscriminantAnalysis())
+])
+
+
+# 5. Cross-validation
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-scores = cross_val_score(clf, X, y, cv=cv, n_jobs=None)
 
-# 5. Results
+scores = cross_val_score(clf, X, y, cv=cv)
+
+
+# 6. Results
 print("\n--- Results ---")
-print(f"Accuracy (mean): {np.mean(scores) * 100:.2f}%")
-print(f"Chance level: 50.00%")
-print(f"Standard deviation: {np.std(scores) * 100:.2f}%")
+print(f"Accuracy mean: {scores.mean() * 100:.2f}%")
+print(f"Accuracy std:  {scores.std() * 100:.2f}%")
+print("Chance level: 50.00%")
