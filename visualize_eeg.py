@@ -3,10 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-# 1. Load the file
-root_folder = Path(__file__).resolve().parent.parent
+# 1. Load data
+import os
+from pathlib import Path
+
+# 1. Dynamic Path Resolution
+# Path(__file__) is classify_eeg.py -> .parent is root
+root_folder = Path(__file__).resolve().parent
 file_path = root_folder / "EEG-proc" / "sub-03_cleaned-epo.fif"
-epochs = mne.read_epochs(file_path, preload=True)
+
+if not file_path.exists():
+    print(f"ERROR: Could not find the processed file at: {file_path}")
+    print("Make sure to run preprocess.py for Subject 1 first.")
+else:
+    # Load the cleaned epochs
+    epochs = mne.read_epochs(file_path, preload=True)
 
 # 2. Update event_id manually
 # Here we map the names to the exact IDs that your log showed (111, 112... 128)
